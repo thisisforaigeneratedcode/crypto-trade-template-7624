@@ -11,6 +11,7 @@ import Deposit from "./pages/Deposit";
 import Withdraw from "./pages/Withdraw";
 
 const queryClient = new QueryClient();
+// NovAlgo Investments Platform
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
