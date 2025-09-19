@@ -11,6 +11,8 @@ import Deposit from "./pages/Deposit";
 import Withdraw from "./pages/Withdraw";
 import Investments from "./pages/Investments";
 import Referrals from "./pages/Referrals";
+import Transactions from "./pages/Transactions";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 // NovAlgo Investments Platform
@@ -31,6 +33,8 @@ const App = () => (
               <Route path="/withdraw" element={<Withdraw />} />
               <Route path="/investments" element={<Investments />} />
               <Route path="/referrals" element={<Referrals />} />
+              <Route path="/transactions" element={<Transactions />} />
+              <Route path="/profile" element={<Profile />} />
             </Routes>
           </BrowserRouter>
         </div>

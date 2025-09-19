@@ -328,9 +328,9 @@ const Dashboard = () => {
                   <Plus className="w-4 h-4 mr-2" />
                   Deposit Funds
                 </Button>
-                <Button variant="outline" onClick={() => navigate('/transactions')}>
+                <Button variant="outline" onClick={() => navigate('/investments')}>
                   <History className="w-4 h-4 mr-2" />
-                  View History
+                  View Investments
                 </Button>
               </div>
             </CardContent>

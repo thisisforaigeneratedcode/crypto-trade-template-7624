@@ -36,7 +36,7 @@ interface Referral {
   total_deposits: number;
   commission_amount: number;
   created_at: string;
-  profiles: {
+  profiles?: {
     full_name: string;
   };
 }
@@ -81,18 +81,36 @@ const Referrals = () => {
       if (walletError) throw walletError;
       setWalletData(wallet);
 
-      // Fetch referrals
+      // Fetch referrals with profile data
       const { data: referralsData, error: referralsError } = await supabase
         .from('referrals')
-        .select(`
-          *,
-          profiles!referrals_referred_id_fkey (full_name)
-        `)
+        .select('*')
         .eq('referrer_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (referralsError) throw referralsError;
-      setReferrals(referralsData || []);
+      if (referralsError) {
+        console.error('Referrals error:', referralsError);
+        setReferrals([]);
+      } else if (referralsData) {
+        // Fetch profile data for each referral
+        const referralsWithProfiles = await Promise.all(
+          referralsData.map(async (referral) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('user_id', referral.referred_id)
+              .single();
+            
+            return {
+              ...referral,
+              profiles: profile || { full_name: 'User' }
+            };
+          })
+        );
+        setReferrals(referralsWithProfiles);
+      } else {
+        setReferrals([]);
+      }
     } catch (error) {
       console.error('Error fetching referral data:', error);
       toast({
@@ -190,7 +208,7 @@ const Referrals = () => {
         .from('transactions')
         .insert({
           user_id: user?.id,
-          type: 'referral_bonus_transfer',
+          type: 'profit',
           amount: walletData.referral_bonus_balance,
           description: 'Referral bonus transfer to main balance',
           balance_before: walletData.main_balance,
@@ -390,7 +408,7 @@ const Referrals = () => {
                   {referrals.map((referral) => (
                     <div key={referral.id} className="flex justify-between items-center p-4 rounded-lg bg-muted/50">
                       <div>
-                        <p className="font-medium">{referral.profiles.full_name}</p>
+                        <p className="font-medium">{referral.profiles?.full_name || 'User'}</p>
                         <p className="text-sm text-muted-foreground">
                           Joined: {new Date(referral.created_at).toLocaleDateString()}
                         </p>
