@@ -174,11 +174,74 @@ const Dashboard = () => {
       return;
     }
 
-    // For now, we'll just show a message. In a real app, this would navigate to an investment flow
-    toast({
-      title: "Investment Feature",
-      description: "Investment functionality will be implemented in the next phase.",
-    });
+    try {
+      setLoading(true);
+      
+      // Calculate expected return
+      const expectedReturn = packageData.minimum_amount * packageData.multiplier;
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + 365); // 1 year investment period
+      
+      // Create investment record
+      const { data: investment, error: investmentError } = await supabase
+        .from('investments')
+        .insert({
+          user_id: user?.id,
+          package_id: packageData.id,
+          amount: packageData.minimum_amount,
+          expected_return: expectedReturn,
+          end_date: endDate.toISOString(),
+          status: 'active'
+        })
+        .select()
+        .single();
+
+      if (investmentError) throw investmentError;
+
+      // Create transaction record for the investment
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert({
+          user_id: user?.id,
+          type: 'investment',
+          amount: packageData.minimum_amount,
+          description: `Investment in ${packageData.name} package`,
+          reference_id: investment.id,
+          balance_before: walletData?.main_balance || 0,
+          balance_after: (walletData?.main_balance || 0) - packageData.minimum_amount
+        });
+
+      if (transactionError) throw transactionError;
+
+      // Update wallet balance
+      const { error: walletError } = await supabase
+        .from('wallets')
+        .update({
+          main_balance: (walletData?.main_balance || 0) - packageData.minimum_amount,
+          total_invested: (walletData?.total_invested || 0) + packageData.minimum_amount
+        })
+        .eq('user_id', user?.id);
+
+      if (walletError) throw walletError;
+
+      toast({
+        title: "Investment Successful!",
+        description: `You have successfully invested ${formatCurrency(packageData.minimum_amount)} in the ${packageData.name} package.`,
+      });
+
+      // Refresh dashboard data
+      await fetchDashboardData();
+
+    } catch (error) {
+      console.error('Investment error:', error);
+      toast({
+        variant: "destructive",
+        title: "Investment Failed",
+        description: "There was an error processing your investment. Please try again.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
